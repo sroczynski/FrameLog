@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>FrameLog</id>
+    <version>${version.major}.${version.minor}.${version.build}</version>
+    <authors>Martin Eden</authors>
+    <owners>LShift Ltd</owners>
+    <licenseUrl>https://bitbucket.org/MartinEden/framelog/wiki/License</licenseUrl>
+    <projectUrl>https://bitbucket.org/MartinEden/framelog</projectUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>A logging module for EntityFramework</description>
+    <copyright>Copyright 2014</copyright>
+    <releaseNotes>${version.message}</releaseNotes>
+    <dependencies>
+      <dependency id="EntityFramework" version="6.0.0" />
+    </dependencies>
+  </metadata>
+</package>

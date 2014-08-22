@@ -1,0 +1,13 @@
+syntax: regexp
+.suo$
+/bin/
+/obj/
+^packages/
+^target/
+^conf/App.config$
+^FrameLog/Properties/AssemblyInfo.cs$
+^conf/FrameLog.nuspec$
+~$
+.nupkg$
+^hg-commit-message$
+.orig$

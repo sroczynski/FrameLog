@@ -1,0 +1,208 @@
+<?xml version="1.0"?>
+<project name="FrameLog" default="test">
+  <property name="nant.settings.currentframework" value="net-4.0" />
+  <property name="framework.dir" value="C:\Windows\Microsoft.NET\Framework\v4.0.30319" />
+  <property name="target.dir" value="target" />
+  <property name="demo.assembly" value="FrameLog.Example.Demo.exe" />
+  <property name="tests.assembly" value="FrameLog.Tests.dll" />
+  
+  <property name="version.major" value="1" />
+  <property name="version.minor" value="4" />
+  <!-- Provided automatically by TeamCity -->
+  <property name="version.build" value="0" unless="${property::exists('version.build')}" />
+  
+  <property name="db.provider" value="System.Data.SqlClient" />
+  <property name="db.connectionString" value="Server=localhost;Database=FrameLog.Example.ExampleContext;Integrated Security=True;" />
+  
+  <target name="prepare">
+    <delete dir="${target.dir}" />
+    <mkdir dir="${target.dir}" />
+  </target>
+  
+  <target name="create-filterchain">
+    <filterchain id="placeholder">
+        <expandproperties />
+        <replacetokens>
+            <token key="DOLLAR" value="$" />
+        </replacetokens>
+    </filterchain>  
+  </target>
+  
+  <target name="create-app-config" depends="create-filterchain">    
+    <copy file="conf/App.config.template"
+          tofile="conf/App.config"
+          overwrite="true">
+      <filterchain refid="placeholder" />
+    </copy>
+    <copy file="conf/App.config"
+          tofile="FrameLog.Example.Demo/App.config" />
+    <copy file="conf/App.config"
+          tofile="FrameLog.Tests/App.config" />          
+  </target>
+  
+  <target name="create-assembly-info" depends="create-filterchain">
+      <copy file="FrameLog/AssemblyInfo.cs.template"
+          tofile="FrameLog/Properties/AssemblyInfo.cs"
+          overwrite="true">
+      <filterchain refid="placeholder" />
+    </copy>
+  </target>
+  
+  <target name="fetch-ef" depends="prepare">
+    <property name="ef.path" value="${target.dir}/EntityFramework.6.0.0/lib/net40" />
+    <exec program="nuget">
+      <arg value="install" />
+      <arg value="EntityFramework" />
+      <arg value="-Version" />
+      <arg value="6.0.0" />
+      <arg value="-OutputDirectory" />
+      <arg value="${target.dir}" />
+    </exec>
+    <copy file="${ef.path}/EntityFramework.dll"
+          tofile="${target.dir}/EntityFramework.dll" />
+    <copy file="${ef.path}/EntityFramework.SqlServer.dll"
+          tofile="${target.dir}/EntityFramework.SqlServer.dll" />
+  </target>
+  <target name="fetch-nunit" depends="prepare">
+    <exec program="nuget">
+      <arg value="install" />
+      <arg value="NUnit" />
+      <arg value="-Version" />
+      <arg value="2.6.2" />
+      <arg value="-OutputDirectory" />
+      <arg value="${target.dir}" />
+    </exec>
+    <copy file="${target.dir}/NUnit.2.6.2/lib/nunit.framework.dll"
+          tofile="${target.dir}/nunit.framework.dll" />
+  </target>  
+  <target name="fetch-moq" depends="prepare">
+    <exec program="nuget">
+      <arg value="install" />
+      <arg value="Moq" />
+      <arg value="-Version" />
+      <arg value="4.2.1312.1622" />
+      <arg value="-OutputDirectory" />
+      <arg value="${target.dir}" />
+    </exec>
+    <copy file="${target.dir}/Moq.4.2.1312.1622/lib/net40/Moq.dll"
+          tofile="${target.dir}/Moq.dll" />
+  </target>
+  
+  <target name="compile" depends="prepare, fetch-ef, create-assembly-info">
+    <csc target="library" debug="true" output="${target.dir}/FrameLog.dll">
+      <sources>
+        <include name="FrameLog/**/*.cs" />
+      </sources>
+      <references>
+        <include name="${target.dir}/EntityFramework.dll" />
+        <include name="${framework.dir}/System.ComponentModel.DataAnnotations.dll" />
+      </references>
+    </csc>
+  </target>
+  
+  <target name="compile-example" depends="prepare, compile, fetch-ef">
+     <csc target="library" debug="true" output="${target.dir}/FrameLog.Example.dll">
+      <sources>
+        <include name="FrameLog.Example/**/*.cs" />
+      </sources>
+      <references>
+        <include name="${target.dir}/FrameLog.dll" />
+        
+        <include name="${target.dir}/EntityFramework.dll" />
+        <include name="${framework.dir}/System.ComponentModel.DataAnnotations.dll" /> 
+	  </references>
+    </csc>   
+  </target>
+  
+  <target name="compile-demo" depends="prepare, compile, compile-example, fetch-ef, create-app-config">
+     <csc target="exe" debug="true" output="${target.dir}/${demo.assembly}">
+      <sources>
+        <include name="FrameLog.Example.Demo/**/*.cs" />
+      </sources>
+      <references>
+        <include name="${target.dir}/FrameLog.dll" />
+        <include name="${target.dir}/FrameLog.Example.dll" />
+        
+        <include name="${target.dir}/EntityFramework.dll" />
+	  </references>
+    </csc>
+    <copy file="FrameLog.Example.Demo/App.Config"
+          tofile="${target.dir}/${demo.assembly}.config" />
+  </target>
+  
+  <target name="run-demo" depends="compile-demo">
+    <exec program="${target.dir}/${demo.assembly}" />
+  </target>
+  
+  <target name="compile-tests" depends="prepare, compile, compile-example, fetch-nunit, fetch-ef, fetch-moq, create-app-config">
+     <csc target="library" debug="true" output="${target.dir}/${tests.assembly}">
+      <sources>
+        <include name="FrameLog.Tests/**/*.cs" />
+      </sources>
+      <references>
+        <include name="${target.dir}/FrameLog.dll" />
+        <include name="${target.dir}/FrameLog.Example.dll" />
+        
+        <include name="${target.dir}/nunit.framework.dll" />
+        <include name="${target.dir}/EntityFramework.dll" />
+        <include name="${target.dir}/Moq.dll" />
+      </references>
+    </csc>
+    <copy file="FrameLog.Tests/App.Config"
+          tofile="${target.dir}/${tests.assembly}.config" />
+  </target>
+  
+  <target name="test" depends="compile-tests">
+    <nunit2>
+        <formatter type="Xml" usefile="true" extension=".xml" /> 
+        <formatter type="Plain" />
+        <test assemblyname="${target.dir}/${tests.assembly}" />
+    </nunit2>
+  </target>
+  
+  <target name="nuget-nuspec" depends="create-filterchain, get-commit-message">
+    <copy file="conf/FrameLog.nuspec.template"
+          tofile="conf/FrameLog.nuspec"
+          overwrite="true">
+      <filterchain refid="placeholder" />
+    </copy>
+  </target>
+  
+  <target name="nuget-pack" depends="compile, nuget-nuspec">
+    <property name="package.dir" value="${target.dir}/package" />
+    <mkdir dir="${package.dir}" />
+    <copy file="conf/FrameLog.nuspec"
+          tofile="${package.dir}/FrameLog.nuspec"
+          overwrite="true">
+      <filterchain refid="placeholder" />
+    </copy> 
+    <mkdir dir="${package.dir}/lib" />
+    <mkdir dir="${package.dir}/lib/net40" />
+    <copy file="${target.dir}/FrameLog.dll"
+          tofile="${package.dir}//lib/net40/FrameLog.dll" />
+    <exec program="nuget">
+      <arg value="Pack" />
+      <arg value="${package.dir}/FrameLog.nuspec" />
+      <arg value="-OutputDirectory" />
+      <arg value="${target.dir}" />
+    </exec>          
+  </target>
+  
+  <target name="get-commit-message">
+    <exec program="hg" output="hg-commit-message">
+      <arg value="parent" />
+      <arg value="--template" />
+      <arg value="{desc}" />
+    </exec>
+    <property name="version.message" value="" />
+    <loadfile file="hg-commit-message" property="version.message" />
+    <echo>${version.message}</echo>
+  </target>
+  
+  <target name="prebuild-script">
+     <exec program="sqlcmd">
+       <arg value="-i" />
+       <arg value="conf/prebuild.sql" />
+     </exec>
+  </target>
+</project>
